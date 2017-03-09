@@ -11,14 +11,14 @@ endif()
 project(qmorph2D)
 
 set(QMORPH_SRC
-    src/main.cpp
+    #src/main.cpp
     src/predicates.cxx
 	src/QuadMesher.cpp
 	src/sldelaunay2d.cxx
 	src/Vector3D.cpp
 	src/TriMergeGenerator.cpp
 	src/QMorphGenerator.cpp
-	#src/quadMeshAPI.cpp
+	src/quadMeshAPI.cpp
 	src/MeshOptimizer.cpp
 )
 
@@ -37,6 +37,7 @@ set(QMORPH_INC
 	inc/QMorphGenerator.h
 	inc/TriMergeGenerator.h
 	inc/MeshOptimizer.h
+	quadMeshAPI2.h
 )
 
 macro(find_all_libraries VARNAME LISTNAME PATH SUFFIX)
@@ -107,13 +108,19 @@ if(MSVC)
 	#list(APPEND EXTERNAL_LIBRARIES_OPT "${OPENGL_DIR}/lib/glut64.lib")
 endif()
 
-#add_library(qmorph SHARED ${QMORPH_SRC} ${QMORPH_INC})
-add_executable(qmorph ${QMORPH_SRC} ${QMORPH_INC})
+#if(IS_EXE)
+#    add_executable(quadMesh ${QMORPH_SRC} ${QMORPH_INC})
+#else()
+#    add_library(quadMesh SHARED ${QMORPH_SRC} ${QMORPH_INC})
+#endif()
+
+add_library(quadMesh SHARED ${QMORPH_SRC} ${QMORPH_INC})
+#add_executable(qmorph ${QMORPH_SRC} ${QMORPH_INC})
 
 if(MSVC)
-    set_target_properties(qmorph PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_target_properties(quadMesh PROPERTIES COMPILE_FLAGS "/bigobj")
 elseif(UNIX)
-    set_target_properties(qmorph PROPERTIES COMPILE_FLAGS "-std=c++11")
+    set_target_properties(quadMesh PROPERTIES COMPILE_FLAGS "-std=c++11")
 endif()
 
-target_link_libraries(qmorph ${EXTERNAL_LIBRARIES} debug  "${EXTERNAL_LIBRARIES_DEBUG}" optimized  "${EXTERNAL_LIBRARIES_OPT}")
+target_link_libraries(quadMesh ${EXTERNAL_LIBRARIES} debug  "${EXTERNAL_LIBRARIES_DEBUG}" optimized  "${EXTERNAL_LIBRARIES_OPT}")

@@ -1,11 +1,12 @@
 #include "QuadMesher.h"
 
-#include "quadMeshAPI.h"
-#include "mg_def.h"
+#include "quadMeshAPI2.h"
+//#include "mg_def.h"
 #include <sstream>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/filesystem.hpp>
 
 class PropertyTree : public boost::property_tree::ptree 
 {
@@ -70,36 +71,107 @@ public:
 	}
 };
 
-ErrorCodes QMorph2D(MR_NodeArray* nodes, MR_ElemArray* elems,const char* ctrls)
+int QuadMesh(const char* fileName, const char* ctrls)
 {
+	if (!fileName || !ctrls)
+		return -1;
+
+	HDS_mesh backoundMesh;
+
+	QuadMesher myMesher(backoundMesh);
+
+	boost::filesystem::path file_path(fileName);
+
+	if (file_path.extension() != ".inp")
+	{
+		std::cerr << "File format error!\n";
+		std::cerr << "Please input an inp file.\n";
+		return -1;
+	}
+	else if (!boost::filesystem::exists(fileName))
+	{
+		std::cerr << "The file is not exist!\n";
+		std::cerr << "Please input an inp file.\n";
+		return -1;
+	}
+
+	DelaunayAFT2DInterface mesher2d;
+
+	mesher2d.doMeshInp(fileName);
+
+	myMesher.read_tri_mesh(mesher2d);
+
 	PropertyTree json_tree;
 	std::stringstream jstr(ctrls);
 	json_tree.loadJsonStream(jstr);
 	std::string method = "";
 	json_tree.get("data.options.surfaceMesh.method", method);
-	std::cout << method;
 
-	double* myNodes = new double[2 * nodes->length];
-	int* myEdges = new int[2 * elems->length];
-	for (int ni = 0; ni < nodes->length; ++ni)
-	{
-		myNodes[2 * ni] = nodes->array[ni].xyz[0];
-		myNodes[2 * ni + 1] = nodes->array[ni].xyz[1];
-	}
-	for (int ei = 0; ei < elems->length; ++ei)
-	{
-		myEdges[2 * ei] = elems->array[ei].nodes[0] - 1;
-		myEdges[2 * ei + 1] = elems->array[ei].nodes[1] - 1;
-	}
-	QMorphInput input(nodes->length, myNodes,elems->length, myEdges);
-	DelaunayAFT2DInterface mesher2d;
-	int rt=mesher2d.doMesh(&input);
-	if(rt!=0)
-		return rt;
-	HDS_mesh backoundMesh;
-	QuadMesher myMesher(backoundMesh);
-	myMesher.read_tri_mesh(mesher2d);
 	myMesher.mesh(method.c_str());
+
+	myMesher.write_my_mesh_nas("D:/pyTest.nas");
+	return 0;
+
+// 		PropertyTree json_tree;
+// 		std::stringstream jstr(ctrls);
+// 		json_tree.loadJsonStream(jstr);
+// 		std::string method = "";
+// 		json_tree.get("data.options.surfaceMesh.method", method);
+// 		std::cout << method;
+// 
+// 		double* myNodes = new double[2 * nodes->length];
+// 		int* myEdges = new int[2 * elems->length];
+// 		for (int ni = 0; ni < nodes->length; ++ni)
+// 	{
+// 		myNodes[2 * ni] = nodes->array[ni].xyz[0];
+// 		myNodes[2 * ni + 1] = nodes->array[ni].xyz[1];
+// 	}
+// 	for (int ei = 0; ei < elems->length; ++ei)
+// 	{
+// 		myEdges[2 * ei] = elems->array[ei].nodes[0] - 1;
+// 		myEdges[2 * ei + 1] = elems->array[ei].nodes[1] - 1;
+// 	}
+// 	QMorphInput input(nodes->length, myNodes,elems->length, myEdges);
+// 	DelaunayAFT2DInterface mesher2d;
+// 	int rt=mesher2d.doMesh(&input);
+// 	if(rt!=0)
+// 		return rt;
+// 	HDS_mesh backoundMesh;
+// 	QuadMesher myMesher(backoundMesh);
+// 	myMesher.read_tri_mesh(mesher2d);
+// 	myMesher.mesh(method.c_str());
+}
+
+// ErrorCodes QMorph2D(MR_NodeArray* nodes, MR_ElemArray* elems,const char* ctrls)
+// {
+// 	PropertyTree json_tree;
+// 	std::stringstream jstr(ctrls);
+// 	json_tree.loadJsonStream(jstr);
+// 	std::string method = "";
+// 	json_tree.get("data.options.surfaceMesh.method", method);
+// 	std::cout << method;
+// 
+// 	double* myNodes = new double[2 * nodes->length];
+// 	int* myEdges = new int[2 * elems->length];
+// 	for (int ni = 0; ni < nodes->length; ++ni)
+// 	{
+// 		myNodes[2 * ni] = nodes->array[ni].xyz[0];
+// 		myNodes[2 * ni + 1] = nodes->array[ni].xyz[1];
+// 	}
+// 	for (int ei = 0; ei < elems->length; ++ei)
+// 	{
+// 		myEdges[2 * ei] = elems->array[ei].nodes[0] - 1;
+// 		myEdges[2 * ei + 1] = elems->array[ei].nodes[1] - 1;
+// 	}
+// 	QMorphInput input(nodes->length, myNodes,elems->length, myEdges);
+// 	DelaunayAFT2DInterface mesher2d;
+// 	int rt=mesher2d.doMesh(&input);
+// 	if(rt!=0)
+// 		return rt;
+// 	HDS_mesh backoundMesh;
+// 	QuadMesher myMesher(backoundMesh);
+// 	myMesher.read_tri_mesh(mesher2d);
+	/*myMesher.mesh(method.c_str());*/
 // 	int rt = mesher2d.doMeshInp(file_name);
 // 	if(rt!=0)
 // 		return rt;
@@ -153,6 +225,6 @@ ErrorCodes QMorph2D(MR_NodeArray* nodes, MR_ElemArray* elems,const char* ctrls)
 // 			} while (edge_begin != edge_end);
 // 		}
 // 	}
-	myMesher.write_my_mesh_nas("0811.nas");
-	return 0;
-}
+// 	myMesher.write_my_mesh_nas("0811.nas");
+// 	return 0;
+/*}*/
